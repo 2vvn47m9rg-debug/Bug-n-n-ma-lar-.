@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Bugünün Maçları</title>
+<style>
+body { font-family: Arial, sans-serif; margin:0; background:#e9ecef;}
+header { background:#007bff; color:white; text-align:center; padding:15px; font-size:1.4em; font-weight:bold;}
+.match { background:#fff; margin:10px; padding:15px; border-radius:10px; box-shadow:0 3px 6px rgba(0,0,0,0.1); transition: transform 0.1s;}
+.match:hover { transform: translateY(-2px); }
+.teams { font-weight:bold; font-size:1.1em; }
+.market { margin-top:5px; font-size:0.9em; color:#555; }
+.confidence { margin-top:5px; font-size:0.9em; font-weight:bold; }
+.green { color:#28a745; }
+.yellow { color:#fd7e14; }
+.red { color:#dc3545; }
+.yorum { margin-top:5px; font-size:0.9em; font-style:italic; color:#333; }
+</style>
+</head>
+<body>
+
+<header>Bugünün Maçları</header>
+<div id="matches"></div>
+
+<script>
+function loadMatches() {
+    fetch('today_matches.json')
+    .then(res => res.json())
+    .then(data => {
+        const container = document.getElementById('matches');
+        container.innerHTML = '';
+        data.matches.forEach(m => {
+            let colorClass = 'red';
+            if(m.confidence >= 75) colorClass = 'green';
+            else if(m.confidence >= 68) colorClass = 'yellow';
+
+            const div = document.createElement('div');
+            div.className = 'match';
+            div.innerHTML = `
+                <div class="teams">${m.home} vs ${m.away}</div>
+                <div class="market">Market: ${m.market}</div>
+                <div class="confidence ${colorClass}">Güven: ${m.confidence}%</div>
+                <div class="yorum">${m.yorum}</div>
+            `;
+            container.appendChild(div);
+
+            // Bildirim
+            if(Notification.permission === "granted" && m.confidence >= 75){
+                new Notification("Yeni Maç Önerisi", {
+                    body: `${m.home} vs ${m.away} - ${m.market} Güven: ${m.confidence}%`
+                });
+            }
+        });
+    });
+}
+
+// İlk yükleme
+loadMatches();
+
+// Her 5 dakikada bir yenile
+setInterval(loadMatches, 5*60*1000);
+
+// Bildirim izni
+if("Notification" in window){
+    if(Notification.permission !== "granted") Notification.requestPermission();
+}
+</script>
+
+</body>
+</html>
